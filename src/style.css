@@ -60,7 +60,6 @@ svg {
   background: rgba(124, 58, 237, 0.25);
 }
 
-
 /* =========================================================
    SMOOTH INTERACTION
 ========================================================= */
@@ -77,7 +76,6 @@ textarea {
     transform 0.25s ease;
 }
 
-
 /* =========================================================
    ACCESSIBILITY
 ========================================================= */
@@ -89,7 +87,6 @@ textarea:focus-visible {
   outline: 3px solid rgba(124, 58, 237, 0.25);
   outline-offset: 2px;
 }
-
 
 /* =========================================================
    CUSTOM SCROLLBAR
@@ -124,27 +121,22 @@ textarea:focus-visible {
   );
 }
 
-
 /* =========================================================
    MOBILE SAFETY
 ========================================================= */
 
 @media (max-width: 640px) {
-
   html,
   body {
     overflow-x: hidden;
   }
-
 }
-
 
 /* =========================================================
    REDUCE MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -153,5 +145,4 @@ textarea:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-
 }
