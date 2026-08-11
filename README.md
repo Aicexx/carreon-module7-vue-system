@@ -1,5 +1,43 @@
-# Vue 3 + Vite
+## Installation
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Clone the repository:
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+```bash
+git clone https://github.com/Aicexx/carreon-module7-vue-system.git
+```
+
+Navigate to the project:
+
+```bash
+cd carreon-module7-vue-system
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+Build the project:
+
+```bash
+npm run build
+```
+
+## Live Demo
+
+https://aicexx.github.io/carreon-module7-vue-system/
+
+## Author
+
+Aicelle Joy B. Carreon
+
+BSCS 3A
+
+Software Engineering 1 – Module 7
