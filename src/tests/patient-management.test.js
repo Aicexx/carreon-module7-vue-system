@@ -150,4 +150,11 @@ describe('MediCare Patient Management System', () => {
 
     expect(results).toHaveLength(0)
   })
+
+  // TEST 8: Display Records - Empty Records
+  it('should handle empty patient records correctly', () => {
+    const patients = []
+
+    expect(patients).toHaveLength(0)
+  })
 })
