@@ -157,4 +157,20 @@ describe('MediCare Patient Management System', () => {
 
     expect(patients).toHaveLength(0)
   })
+    // TEST 9: Invalid Age Validation
+  it('should reject an age greater than 120', () => {
+    const patient = {
+      patientName: 'Test Patient',
+      age: 121
+    }
+
+    const ageIsValid =
+      patient.age !== '' &&
+      patient.age !== null &&
+      patient.age !== undefined &&
+      Number(patient.age) >= 0 &&
+      Number(patient.age) <= 120
+
+    expect(ageIsValid).toBe(false)
+  })
 })
