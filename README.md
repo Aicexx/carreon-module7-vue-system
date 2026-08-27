@@ -211,6 +211,28 @@ Future versions of the system may include:
 - Improved reporting and analytics
 - Production-level security and data protection
 
+## Module 8 Software Testing
+
+### Tested Features
+- Add Patient
+- Display Patient Records
+- Edit Patient
+- Delete Patient
+- Search Patient
+
+### Manual Testing
+A total of 10 manual test cases were performed, consisting of positive, negative, and edge test cases.
+
+### Automated Testing
+Vitest was used to execute automated unit tests for the patient management features.
+
+### Defect Testing
+An age validation defect was identified where age 0 was incorrectly treated as an empty value. The validation logic was corrected to allow 0 as a valid age.
+
+### Regression Testing
+After the correction, all automated tests passed successfully, including the age 0 validation test.
+
+
 ## Project Status
 
 **Completed Module 7 frontend prototype**
