@@ -7,5 +7,11 @@ export default defineConfig({
     vue(),
     tailwindcss()
   ],
-  base: '/carreon-module7-vue-system/'
+
+  base: '/carreon-module7-vue-system/',
+
+  test: {
+    environment: 'jsdom',
+    globals: true
+  }
 })

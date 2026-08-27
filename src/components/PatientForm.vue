@@ -48,11 +48,13 @@ function validate() {
     newErrors.patientName = 'Patient name is required.'
   }
 
-  if (!age.value) {
-    newErrors.age = 'Age is required.'
-  } else if (Number(age.value) < 0 || Number(age.value) > 120) {
-    newErrors.age = 'Please enter a valid age.'
-  }
+  if (age.value === '' || age.value === null || age.value === undefined) {
+  newErrors.age = 'Age is required.'
+} else if (Number(age.value) < 0 || Number(age.value) > 120) {
+  newErrors.age = 'Please enter a valid age.'
+}
+
+  
 
   if (!gender.value) {
     newErrors.gender = 'Gender is required.'

@@ -24,11 +24,213 @@ const notificationsEnabled = ref(true)
 const compactMode = ref(false)
 
 /* =========================================================
+   AUTHENTICATION
+========================================================= */
+
+const authMode = ref('login')
+const authLoading = ref(false)
+const authError = ref('')
+const authSuccess = ref('')
+const currentUser = ref(null)
+const showLoginPassword = ref(false)
+const showRegisterPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+const registerPasswordStrength = computed(() => {
+  const value = registerForm.value.password
+  let score = 0
+  if (value.length >= 8) score++
+  if (/[A-Z]/.test(value)) score++
+  if (/[a-z]/.test(value)) score++
+  if (/[0-9]/.test(value)) score++
+  if (/[^A-Za-z0-9]/.test(value)) score++
+  return score
+})
+
+const loginForm = ref({
+  email: '',
+  password: ''
+})
+
+const registerForm = ref({
+  fullName: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+})
+
+const isAuthenticated = computed(() => Boolean(currentUser.value))
+
+async function hashPassword(password) {
+  const data = new TextEncoder().encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+function getUsers() {
+  try {
+    return JSON.parse(localStorage.getItem('medicare-users') || '[]')
+  } catch {
+    return []
+  }
+}
+
+function saveUsers(users) {
+  localStorage.setItem('medicare-users', JSON.stringify(users))
+}
+
+function switchAuthMode(mode) {
+  authMode.value = mode
+  authError.value = ''
+  authSuccess.value = ''
+}
+
+async function registerUser() {
+  authError.value = ''
+  authSuccess.value = ''
+
+  const fullName = registerForm.value.fullName.trim()
+  const email = registerForm.value.email.trim().toLowerCase()
+  const password = registerForm.value.password
+  const confirmPassword = registerForm.value.confirmPassword
+
+  if (!fullName || !email || !password || !confirmPassword) {
+    authError.value = 'Please complete all fields.'
+    return
+  }
+
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    authError.value = 'Please enter a valid email address.'
+    return
+  }
+
+  if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    authError.value = 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.'
+    return
+  }
+
+  if (password !== confirmPassword) {
+    authError.value = 'Passwords do not match.'
+    return
+  }
+
+  const users = getUsers()
+
+  if (users.some(user => user.email === email)) {
+    authError.value = 'An account with this email already exists.'
+    return
+  }
+
+  authLoading.value = true
+
+  try {
+    const passwordHash = await hashPassword(password)
+
+    users.push({
+      id: Date.now(),
+      fullName,
+      email,
+      passwordHash,
+      createdAt: new Date().toISOString()
+    })
+
+    saveUsers(users)
+
+    registerForm.value = {
+      fullName: '',
+      email: '',
+      password: '',
+      confirmPassword: ''
+    }
+
+    loginForm.value.email = email
+    authMode.value = 'login'
+    authSuccess.value = 'Account created successfully. You can now sign in.'
+  } catch (error) {
+    console.error('Registration error:', error)
+    authError.value = 'Unable to create the account. Please try again.'
+  } finally {
+    authLoading.value = false
+  }
+}
+
+async function loginUser() {
+  authError.value = ''
+  authSuccess.value = ''
+
+  const email = loginForm.value.email.trim().toLowerCase()
+  const password = loginForm.value.password
+
+  if (!email || !password) {
+    authError.value = 'Please enter your email and password.'
+    return
+  }
+
+  authLoading.value = true
+
+  try {
+    const users = getUsers()
+    const user = users.find(item => item.email === email)
+
+    if (!user) {
+      authError.value = 'Invalid email or password.'
+      return
+    }
+
+    const passwordHash = await hashPassword(password)
+
+    if (passwordHash !== user.passwordHash) {
+      authError.value = 'Invalid email or password.'
+      return
+    }
+
+    currentUser.value = {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email
+    }
+
+    localStorage.setItem(
+      'medicare-current-user',
+      JSON.stringify(currentUser.value)
+    )
+
+    loginForm.value.password = ''
+  } catch (error) {
+    console.error('Login error:', error)
+    authError.value = 'Unable to sign in. Please try again.'
+  } finally {
+    authLoading.value = false
+  }
+}
+
+function logoutUser() {
+  localStorage.removeItem('medicare-current-user')
+  currentUser.value = null
+  authMode.value = 'login'
+  authError.value = ''
+  authSuccess.value = ''
+  loginForm.value.password = ''
+  menuOpen.value = false
+  activityOpen.value = false
+  settingsOpen.value = false
+  selectedPatient.value = null
+}
+
+/* =========================================================
    LOAD SAVED DATA
 ========================================================= */
 
 onMounted(() => {
   try {
+    const savedUser = localStorage.getItem('medicare-current-user')
+
+    if (savedUser) {
+      currentUser.value = JSON.parse(savedUser)
+    }
+
     const savedPatients = localStorage.getItem('hospital-patients')
     const savedTheme = localStorage.getItem('hospital-theme')
     const savedActivities = localStorage.getItem('hospital-activities')
@@ -733,6 +935,359 @@ function goToSection(section) {
   >
 
     <!-- ===================================================
+         AUTHENTICATION SCREEN
+    ==================================================== -->
+
+    <div
+      v-if="!isAuthenticated"
+      class="relative z-50 flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-6"
+      :class="isDark ? 'bg-[#070816]' : 'bg-[#f7f8ff]'"
+    >
+      <!-- Auth background -->
+      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          class="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full blur-[120px]"
+          :class="isDark ? 'bg-violet-700/25' : 'bg-violet-300/45'"
+        ></div>
+        <div
+          class="absolute -right-40 top-[15%] h-[520px] w-[520px] rounded-full blur-[130px]"
+          :class="isDark ? 'bg-blue-700/20' : 'bg-blue-300/35'"
+        ></div>
+        <div
+          class="absolute bottom-[-220px] left-[25%] h-[520px] w-[520px] rounded-full blur-[130px]"
+          :class="isDark ? 'bg-pink-700/20' : 'bg-pink-300/30'"
+        ></div>
+
+        <div
+          class="absolute inset-0 opacity-[0.035]"
+          :style="{ backgroundImage: 'linear-gradient(rgba(124,58,237,.9) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,.9) 1px, transparent 1px)', backgroundSize: '42px 42px' }"
+        ></div>
+      </div>
+
+      <div class="relative w-full max-w-5xl">
+        <!-- Top bar -->
+        <div class="mb-5 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-blue-600 to-pink-500 text-xl text-white shadow-lg shadow-violet-500/25"
+            >
+              🏥
+            </div>
+            <div>
+              <p
+                class="text-sm font-black"
+                :class="isDark ? 'text-white' : 'text-slate-950'"
+              >
+                MediCare
+              </p>
+
+            </div>
+          </div>
+
+          <!-- Auth theme toggle -->
+          <button
+            type="button"
+            @click="toggleTheme"
+            class="group flex items-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-black transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+            :class="isDark
+              ? 'border-white/10 bg-white/5 text-yellow-300 hover:bg-white/10'
+              : 'border-violet-100 bg-white text-violet-700 shadow-sm hover:bg-violet-50'"
+            :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+          >
+            <span class="text-base">{{ isDark ? '☀️' : '🌙' }}</span>
+            <span class="hidden sm:inline">{{ isDark ? 'Light Mode' : 'Night Mode' }}</span>
+          </button>
+        </div>
+
+        <div class="grid items-stretch gap-5 lg:grid-cols-[1.05fr_.95fr]">
+          <!-- Brand panel -->
+          <div
+            class="relative hidden overflow-hidden rounded-[32px] border p-9 lg:flex lg:flex-col lg:justify-between"
+            :class="isDark
+              ? 'border-white/10 bg-white/[0.035]'
+              : 'border-violet-100 bg-white/75 shadow-xl shadow-violet-200/20'"
+          >
+            <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-500/10 blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl"></div>
+
+            <div class="relative">
+              <span
+                class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-black"
+                :class="isDark
+                  ? 'border-violet-400/20 bg-violet-500/10 text-violet-300'
+                  : 'border-violet-200 bg-violet-50 text-violet-700'"
+              >
+                ✦ SECURE ACCESS
+              </span>
+
+              <h2
+                class="mt-7 text-5xl font-black leading-[1.02] tracking-tight"
+                :class="isDark ? 'text-white' : 'text-slate-950'"
+              >
+                Smarter care.<br />
+                <span class="bg-gradient-to-r from-violet-600 via-blue-600 to-pink-500 bg-clip-text text-transparent">
+                  Simpler management.
+                </span>
+              </h2>
+
+              <p
+                class="mt-6 max-w-md text-sm leading-7"
+                :class="isDark ? 'text-slate-400' : 'text-slate-500'"
+              >
+                Access patient records, room assignments, analytics, and system tools through one organized MediCare workspace.
+              </p>
+            </div>
+
+            <div class="relative mt-10 grid grid-cols-3 gap-3">
+              <div
+                v-for="item in [
+                  { icon: '🔐', label: 'Secure' },
+                  { icon: '⚡', label: 'Efficient' },
+                  { icon: '📊', label: 'Organized' }
+                ]"
+                :key="item.label"
+                class="rounded-2xl border p-4"
+                :class="isDark ? 'border-white/10 bg-white/[0.04]' : 'border-slate-100 bg-white/80'"
+              >
+                <div class="text-lg">{{ item.icon }}</div>
+                <p
+                  class="mt-2 text-[10px] font-black uppercase tracking-wider"
+                  :class="isDark ? 'text-slate-300' : 'text-slate-600'"
+                >
+                  {{ item.label }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Auth card -->
+          <section
+            class="relative rounded-[32px] border p-5 shadow-2xl backdrop-blur-2xl sm:p-7"
+            :class="isDark
+              ? 'border-white/10 bg-[#0b0a1d]/90 shadow-black/30'
+              : 'border-violet-100 bg-white/90 shadow-violet-200/30'"
+          >
+            <div class="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <span
+                  class="inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider"
+                  :class="isDark ? 'bg-violet-500/10 text-violet-300' : 'bg-violet-50 text-violet-700'"
+                >
+                  {{ authMode === 'login' ? 'Welcome back' : 'Get started' }}
+                </span>
+                <h1
+                  class="mt-3 text-2xl font-black tracking-tight sm:text-3xl"
+                  :class="isDark ? 'text-white' : 'text-slate-950'"
+                >
+                  {{ authMode === 'login' ? 'Sign in to MediCare' : 'Create your account' }}
+                </h1>
+                <p
+                  class="mt-1 text-xs leading-5"
+                  :class="isDark ? 'text-slate-400' : 'text-slate-500'"
+                >
+                  {{ authMode === 'login' ? 'Continue to your patient management dashboard.' : 'Set up secure access to your MediCare workspace.' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Mode switch -->
+            <div
+              class="mb-6 grid grid-cols-2 rounded-2xl border p-1"
+              :class="isDark ? 'border-white/10 bg-white/[0.035]' : 'border-slate-100 bg-slate-50'"
+            >
+              <button
+                type="button"
+                @click="switchAuthMode('login')"
+                class="rounded-xl px-3 py-2.5 text-xs font-black transition-all duration-300"
+                :class="authMode === 'login'
+                  ? 'bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/20'
+                  : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')"
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                @click="switchAuthMode('register')"
+                class="rounded-xl px-3 py-2.5 text-xs font-black transition-all duration-300"
+                :class="authMode === 'register'
+                  ? 'bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-lg shadow-violet-500/20'
+                  : (isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800')"
+              >
+                Register
+              </button>
+            </div>
+
+            <!-- Messages -->
+            <div
+              v-if="authError"
+              class="mb-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-xs font-bold"
+              :class="isDark
+                ? 'border-red-500/20 bg-red-500/10 text-red-300'
+                : 'border-red-200 bg-red-50 text-red-600'"
+            >
+              <span>⚠️</span>
+              <span>{{ authError }}</span>
+            </div>
+
+            <div
+              v-if="authSuccess"
+              class="mb-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-xs font-bold"
+              :class="isDark
+                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-700'"
+            >
+              <span>✓</span>
+              <span>{{ authSuccess }}</span>
+            </div>
+
+            <!-- LOGIN -->
+            <form
+              v-if="authMode === 'login'"
+              @submit.prevent="loginUser"
+              class="space-y-4"
+            >
+              <div>
+                <label
+                  class="mb-2 block text-[10px] font-black uppercase tracking-widest"
+                  :class="isDark ? 'text-slate-400' : 'text-slate-500'"
+                >Email Address</label>
+                <input
+                  v-model="loginForm.email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="you@example.com"
+                  class="w-full rounded-2xl border px-4 py-3.5 text-sm outline-none transition-all focus:ring-4"
+                  :class="isDark
+                    ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus:border-violet-500 focus:ring-violet-500/10'
+                    : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-violet-500/10'"
+                />
+              </div>
+
+              <div>
+                <label
+                  class="mb-2 block text-[10px] font-black uppercase tracking-widest"
+                  :class="isDark ? 'text-slate-400' : 'text-slate-500'"
+                >Password</label>
+                <div class="relative">
+                  <input
+                    v-model="loginForm.password"
+                    :type="showLoginPassword ? 'text' : 'password'"
+                    autocomplete="current-password"
+                    placeholder="Enter your password"
+                    class="w-full rounded-2xl border px-4 py-3.5 pr-16 text-sm outline-none transition-all focus:ring-4"
+                    :class="isDark
+                      ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus:border-violet-500 focus:ring-violet-500/10'
+                      : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-violet-500/10'"
+                  />
+                  <button
+                    type="button"
+                    @click="showLoginPassword = !showLoginPassword"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-[10px] font-black"
+                    :class="isDark ? 'text-violet-300 hover:bg-white/5' : 'text-violet-600 hover:bg-violet-50'"
+                  >
+                    {{ showLoginPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                :disabled="authLoading"
+                class="w-full rounded-2xl bg-gradient-to-r from-violet-600 via-blue-600 to-pink-500 px-5 py-3.5 text-sm font-black text-white shadow-xl shadow-violet-500/20 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ authLoading ? 'Signing In...' : 'Sign In →' }}
+              </button>
+            </form>
+
+            <!-- REGISTER -->
+            <form
+              v-else
+              @submit.prevent="registerUser"
+              class="space-y-3.5"
+            >
+              <div>
+                <label class="mb-2 block text-[10px] font-black uppercase tracking-widest" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Full Name</label>
+                <input
+                  v-model="registerForm.fullName"
+                  type="text"
+                  autocomplete="name"
+                  placeholder="Your full name"
+                  class="w-full rounded-2xl border px-4 py-3.5 text-sm outline-none transition-all focus:ring-4"
+                  :class="isDark ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus:border-violet-500 focus:ring-violet-500/10' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-violet-500/10'"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-[10px] font-black uppercase tracking-widest" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Email Address</label>
+                <input
+                  v-model="registerForm.email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="you@example.com"
+                  class="w-full rounded-2xl border px-4 py-3.5 text-sm outline-none transition-all focus:ring-4"
+                  :class="isDark ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus:border-violet-500 focus:ring-violet-500/10' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-violet-500/10'"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-[10px] font-black uppercase tracking-widest" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Password</label>
+                <div class="relative">
+                  <input
+                    v-model="registerForm.password"
+                    :type="showRegisterPassword ? 'text' : 'password'"
+                    autocomplete="new-password"
+                    placeholder="Create a strong password"
+                    class="w-full rounded-2xl border px-4 py-3.5 pr-16 text-sm outline-none transition-all focus:ring-4"
+                    :class="isDark ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus:border-violet-500 focus:ring-violet-500/10' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-violet-500/10'"
+                  />
+                  <button type="button" @click="showRegisterPassword = !showRegisterPassword" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-[10px] font-black" :class="isDark ? 'text-violet-300 hover:bg-white/5' : 'text-violet-600 hover:bg-violet-50'">
+                    {{ showRegisterPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+
+                <div class="mt-2 grid grid-cols-5 gap-1">
+                  <span v-for="n in 5" :key="n" class="h-1.5 rounded-full transition-colors" :class="registerPasswordStrength >= n ? 'bg-gradient-to-r from-violet-500 to-pink-500' : (isDark ? 'bg-white/10' : 'bg-slate-200')"></span>
+                </div>
+                <p class="mt-2 text-[9px] font-semibold" :class="registerPasswordStrength === 5 ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')">
+                  {{ registerPasswordStrength === 5 ? 'Strong password' : 'Use 8+ characters with uppercase, lowercase, number, and special character.' }}
+                </p>
+              </div>
+
+              <div>
+                <label class="mb-2 block text-[10px] font-black uppercase tracking-widest" :class="isDark ? 'text-slate-400' : 'text-slate-500'">Confirm Password</label>
+                <div class="relative">
+                  <input
+                    v-model="registerForm.confirmPassword"
+                    :type="showConfirmPassword ? 'text' : 'password'"
+                    autocomplete="new-password"
+                    placeholder="Repeat your password"
+                    class="w-full rounded-2xl border px-4 py-3.5 pr-16 text-sm outline-none transition-all focus:ring-4"
+                    :class="isDark ? 'border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus:border-violet-500 focus:ring-violet-500/10' : 'border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-violet-500/10'"
+                  />
+                  <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-[10px] font-black" :class="isDark ? 'text-violet-300 hover:bg-white/5' : 'text-violet-600 hover:bg-violet-50'">
+                    {{ showConfirmPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                :disabled="authLoading"
+                class="w-full rounded-2xl bg-gradient-to-r from-violet-600 via-blue-600 to-pink-500 px-5 py-3.5 text-sm font-black text-white shadow-xl shadow-violet-500/20 transition-all hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {{ authLoading ? 'Creating Account...' : 'Create Account →' }}
+              </button>
+            </form>
+
+          </section>
+        </div>
+
+      </div>
+    </div>
+
+    <template v-else>
+
+    <!-- ===================================================
          PROFESSIONAL BACKGROUND
     ==================================================== -->
 
@@ -1033,6 +1588,44 @@ function goToSection(section) {
 
             Online
 
+          </div>
+
+          <!-- Current User / Logout -->
+          <div class="hidden items-center gap-2 md:flex">
+            <div class="max-w-[170px] truncate text-right">
+              <p class="truncate text-xs font-black" :class="isDark ? 'text-white' : 'text-slate-900'">
+                {{ currentUser?.fullName }}
+              </p>
+              <p class="truncate text-[9px]" :class="isDark ? 'text-slate-500' : 'text-slate-400'">
+                {{ currentUser?.email }}
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="logoutUser"
+              class="flex h-11 items-center gap-2 rounded-2xl border px-3 text-xs font-black transition hover:-translate-y-0.5 active:scale-95"
+              :class="isDark
+                ? 'border-white/10 bg-white/5 text-slate-200 hover:bg-red-500/10 hover:text-red-300'
+                : 'border-violet-100 bg-white text-slate-600 hover:bg-red-50 hover:text-red-600'"
+              aria-label="Sign out"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-5 w-5 shrink-0"
+                aria-hidden="true"
+              >
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <path d="m16 17 5-5-5-5" />
+                <path d="M21 12H9" />
+              </svg>
+              <span class="hidden xl:inline">Sign Out</span>
+            </button>
           </div>
 
         </div>
@@ -1372,6 +1965,42 @@ function goToSection(section) {
                     →
                   </span>
 
+                </button>
+
+                <!-- Sign Out -->
+                <button
+                  @click="logoutUser"
+                  class="group flex w-full items-center gap-3 rounded-2xl px-4 py-4 text-left transition-all duration-300 active:scale-[0.98]"
+                  :class="isDark
+                    ? 'text-red-300 hover:bg-red-500/10'
+                    : 'text-red-600 hover:bg-red-50'"
+                >
+                  <span
+                    class="flex h-10 w-10 items-center justify-center rounded-xl"
+                    :class="isDark ? 'bg-red-500/10' : 'bg-red-50'"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="h-5 w-5"
+                      aria-hidden="true"
+                    >
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <path d="m16 17 5-5-5-5" />
+                      <path d="M21 12H9" />
+                    </svg>
+                  </span>
+                  <span class="text-sm font-bold">
+                    Sign Out
+                  </span>
+                  <span class="ml-auto text-xs opacity-40">
+                    →
+                  </span>
                 </button>
 
               </nav>
@@ -2993,6 +3622,8 @@ function goToSection(section) {
     ==================================================== -->
 
     <AppFooter />
+
+    </template>
 
   </div>
 
