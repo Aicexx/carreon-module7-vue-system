@@ -239,6 +239,60 @@ After the correction, all automated tests passed successfully, including the age
 
 The application implements the required CRUD operations, search, validation, localStorage persistence, responsive interface, reusable Vue components, GitHub version control, GitHub Actions build verification, and GitHub Pages deployment.
 
+## Module 9 – Software Evolution
+
+### Change Request
+
+**CR-M9-01: Add an Active/Inactive filter to the patient record list**
+
+### Maintenance Type
+
+**Perfective Maintenance**
+
+The change improves the usability of the existing patient record list by allowing users to filter records by patient status without removing existing system functions.
+
+### Affected Architecture
+
+The update affects the Vue.js frontend, particularly the patient record presentation and filtering interaction.
+
+The existing localStorage-based patient data flow was preserved.
+
+### Target Version
+
+**Version 1.1.0**
+
+### Implemented Changes
+
+- Added **All**, **Active**, and **Inactive** patient filters.
+- Added patient **status** support.
+- Existing CRUD operations were preserved.
+- Existing patient search functionality was preserved.
+- Existing validation was preserved.
+- Existing delete confirmation was preserved.
+- Existing localStorage persistence was preserved.
+- Responsive desktop and mobile layouts were preserved.
+- Older patient records without a status safely default to **Active**.
+
+### Testing and Release Evidence
+
+- **Robot Framework UI Tests:** 2 passed, 0 failed
+- **Vitest Tests:** 11 passed, 0 failed
+- **Production Build:** Successful
+- **GitHub Actions:** Passed
+- **Pull Request:** Module 9 – Software Evolution successfully merged into `main`
+
+### Limitations
+
+The current system continues to use browser localStorage for patient records. The Active/Inactive status filter is implemented on the existing frontend data flow.
+
+### Release Notes – Version 1.1.0
+
+**Perfective Maintenance**
+
+Added an Active/Inactive patient record filter to improve record management and usability while preserving the existing CRUD, search, validation, delete confirmation, persistence, and responsive interface.
+
+Testing confirmed that the evolved system passed the existing regression suite and the new filter tests. Browser-based Robot Framework tests also confirmed the Active and Inactive filtering behavior.
+
 ## Author
 
 **Aicelle Joy Basilio Carreon**
