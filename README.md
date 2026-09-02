@@ -243,7 +243,9 @@ The application implements the required CRUD operations, search, validation, loc
 
 ### Change Request
 
-**CR-M9-01: Add an Active/Inactive filter to the patient record list**
+**Change Request ID:** CR-M9-01  
+**Title:** Add Active/Inactive Patient Filter  
+**Maintenance Type:** Perfective Maintenance
 
 ### Maintenance Type
 
