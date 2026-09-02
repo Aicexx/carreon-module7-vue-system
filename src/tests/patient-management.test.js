@@ -157,7 +157,8 @@ describe('MediCare Patient Management System', () => {
 
     expect(patients).toHaveLength(0)
   })
-    // TEST 9: Invalid Age Validation
+
+  // TEST 9: Invalid Age Validation
   it('should reject an age greater than 120', () => {
     const patient = {
       patientName: 'Test Patient',
@@ -172,5 +173,67 @@ describe('MediCare Patient Management System', () => {
       Number(patient.age) <= 120
 
     expect(ageIsValid).toBe(false)
+  })
+
+  // TEST 10: Active Status Filter
+  it('should return only active patients when the Active filter is selected', () => {
+    const patients = [
+      {
+        id: 1,
+        patientName: 'Active Patient',
+        status: 'Active'
+      },
+      {
+        id: 2,
+        patientName: 'Inactive Patient',
+        status: 'Inactive'
+      }
+    ]
+
+    const statusFilter = 'Active'
+
+    const results = patients.filter(patient => {
+      const patientStatus = patient.status || 'Active'
+
+      return (
+        statusFilter === 'All' ||
+        patientStatus === statusFilter
+      )
+    })
+
+    expect(results).toHaveLength(1)
+    expect(results[0].patientName).toBe('Active Patient')
+    expect(results[0].status).toBe('Active')
+  })
+
+  // TEST 11: Inactive Status Filter
+  it('should return only inactive patients when the Inactive filter is selected', () => {
+    const patients = [
+      {
+        id: 1,
+        patientName: 'Active Patient',
+        status: 'Active'
+      },
+      {
+        id: 2,
+        patientName: 'Inactive Patient',
+        status: 'Inactive'
+      }
+    ]
+
+    const statusFilter = 'Inactive'
+
+    const results = patients.filter(patient => {
+      const patientStatus = patient.status || 'Active'
+
+      return (
+        statusFilter === 'All' ||
+        patientStatus === statusFilter
+      )
+    })
+
+    expect(results).toHaveLength(1)
+    expect(results[0].patientName).toBe('Inactive Patient')
+    expect(results[0].status).toBe('Inactive')
   })
 })
