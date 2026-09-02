@@ -11,6 +11,7 @@ import AppFooter from './components/AppFooter.vue'
 
 const patients = ref([])
 const searchTerm = ref('')
+const statusFilter = ref('All')
 const editingPatient = ref(null)
 const formResetKey = ref(0)
 const message = ref('')
@@ -238,8 +239,14 @@ onMounted(() => {
     const savedCompactMode = localStorage.getItem('hospital-compact-mode')
 
     if (savedPatients) {
-      patients.value = JSON.parse(savedPatients)
-    }
+    const storedPatients = JSON.parse(savedPatients)
+
+    patients.value = storedPatients.map(patient => ({
+    status: 'Active',
+    ...patient
+    
+    }))
+  }
 
     if (savedTheme === 'dark') {
       isDark.value = true
@@ -414,12 +421,17 @@ function importPatientData(event) {
         throw new Error('Invalid patient data')
       }
 
-      const validPatients = imported.patients.filter(
-        patient =>
-          patient &&
-          patient.id !== undefined &&
-          patient.patientName !== undefined
-      )
+      const validPatients = imported.patients
+        .filter(
+          patient =>
+            patient &&
+            patient.id !== undefined &&
+            patient.patientName !== undefined
+        )
+        .map(patient => ({
+          status: 'Active',
+          ...patient
+        }))
 
       patients.value = validPatients
       savePatients()
@@ -603,11 +615,14 @@ function savePatient(patientData) {
       'Patient record updated successfully.'
     )
   } else {
+  
     const newPatient = {
       id: Date.now(),
       ...patientData,
-      roomNumber: String(patientData.roomNumber).trim(),
-      createdAt: new Date().toISOString()
+      status: patientData.status || 'Active',
+       roomNumber: String(patientData.roomNumber).trim(),
+       createdAt: new Date().toISOString()
+  
     }
 
     patients.value.push(newPatient)
@@ -706,11 +721,21 @@ const filteredPatients = computed(() => {
     .toLowerCase()
     .trim()
 
-  if (!keyword) {
-    return patients.value
-  }
-
   return patients.value.filter(patient => {
+    const patientStatus = patient.status || 'Active'
+
+    const matchesStatus =
+      statusFilter.value === 'All' ||
+      patientStatus === statusFilter.value
+
+    if (!matchesStatus) {
+      return false
+    }
+
+    if (!keyword) {
+      return true
+    }
+
     const name = String(
       patient.patientName ?? ''
     ).toLowerCase()
@@ -3116,12 +3141,15 @@ function goToSection(section) {
         class="scroll-mt-24"
       >
 
-        <PatientList
-          :patients="filteredPatients"
-          @edit="editPatient"
-          @delete="deletePatient"
-          @view="viewPatient"
-        />
+        
+          <PatientList
+             :patients="filteredPatients"
+              :status-filter="statusFilter"
+              @filter-status="statusFilter = $event"
+              @edit="editPatient"
+              @delete="deletePatient"
+              @view="viewPatient"
+            />
 
       </section>
 

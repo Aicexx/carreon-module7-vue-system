@@ -22,6 +22,7 @@ const age = ref('')
 const gender = ref('')
 const diagnosis = ref('')
 const roomNumber = ref('')
+const status = ref('Active')
 
 const errors = ref({})
 
@@ -30,10 +31,11 @@ watch(
   patient => {
     if (patient) {
       patientName.value = patient.patientName || ''
-      age.value = patient.age || ''
+      age.value = patient.age ?? ''
       gender.value = patient.gender || ''
       diagnosis.value = patient.diagnosis || ''
       roomNumber.value = patient.roomNumber || ''
+      status.value = patient.status || 'Active'
     } else {
       resetForm()
     }
@@ -48,13 +50,18 @@ function validate() {
     newErrors.patientName = 'Patient name is required.'
   }
 
-  if (age.value === '' || age.value === null || age.value === undefined) {
-  newErrors.age = 'Age is required.'
-} else if (Number(age.value) < 0 || Number(age.value) > 120) {
-  newErrors.age = 'Please enter a valid age.'
-}
-
-  
+  if (
+    age.value === '' ||
+    age.value === null ||
+    age.value === undefined
+  ) {
+    newErrors.age = 'Age is required.'
+  } else if (
+    Number(age.value) < 0 ||
+    Number(age.value) > 120
+  ) {
+    newErrors.age = 'Please enter a valid age.'
+  }
 
   if (!gender.value) {
     newErrors.gender = 'Gender is required.'
@@ -81,7 +88,8 @@ function submitForm() {
     age: Number(age.value),
     gender: gender.value,
     diagnosis: diagnosis.value.trim(),
-    roomNumber: roomNumber.value.trim()
+    roomNumber: roomNumber.value.trim(),
+    status: status.value
   })
 }
 
@@ -91,6 +99,7 @@ function resetForm() {
   gender.value = ''
   diagnosis.value = ''
   roomNumber.value = ''
+  status.value = 'Active'
   errors.value = {}
 }
 
@@ -344,6 +353,30 @@ function cancelEdit() {
           >
             {{ errors.roomNumber }}
           </p>
+
+        </div>
+
+
+        <!-- STATUS -->
+        <div>
+
+          <label
+            class="mb-2 block text-xs font-black uppercase tracking-wider"
+            :class="isDark ? 'text-slate-200' : 'text-slate-700'"
+          >
+            Status
+          </label>
+
+          <select
+            v-model="status"
+            class="w-full rounded-2xl border py-3.5 px-4 text-sm outline-none transition duration-300"
+            :class="isDark
+              ? 'border-slate-700 bg-[#080719] text-white focus:border-violet-400 focus:ring-4 focus:ring-violet-400/10'
+              : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100'"
+          >
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
 
         </div>
 
