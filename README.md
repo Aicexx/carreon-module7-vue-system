@@ -281,6 +281,30 @@ The existing localStorage-based patient data flow was preserved.
 - **GitHub Actions:** Passed
 - **Pull Request:** Module 9 – Software Evolution successfully merged into `main`
 
+### Updated Test Cases
+
+| Test Case ID | Test Case | Expected Result | Actual Result | Status |
+|---|---|---|---|---|
+| TC01 | Add New Patient | New patient record is added successfully. | Patient record was added successfully. | PASS |
+| TC02 | Add Inactive Patient | Patient is saved with Inactive status. | Inactive patient was saved successfully. | PASS |
+| TC03 | Active Filter | Only Active patient records are displayed. | Active filter displayed only Active records. | PASS |
+| TC04 | Inactive Filter | Only Inactive patient records are displayed. | Inactive filter displayed only Inactive records. | PASS |
+| TC05 | All Filter | All patient records are displayed. | All patient records were displayed. | PASS |
+| TC06 | Search with Active Filter | Matching Active patient is displayed. | Matching Active record was displayed. | PASS |
+| TC07 | Search with Inactive Filter | Matching Inactive patient is displayed. | Matching Inactive record was displayed. | PASS |
+| TC08 | Empty Inactive Results | No records and the empty-state message are displayed. | 0 records and the empty-state message were displayed. | PASS |
+| TC09 | Edit Patient Status | Patient status changes successfully. | Patient status was changed successfully. | PASS |
+| TC10 | Delete Patient | Delete confirmation appears and the patient is removed. | Delete confirmation and removal worked successfully. | PASS |
+| TC11 | Data Persistence | Patient records remain after page refresh. | Patient records remained after refresh. | PASS |
+| TC12 | Responsive Filter UI | Filter controls remain usable on desktop and mobile. | Responsive filter interface was maintained. | PASS |
+
+### Automated Test Evidence
+
+- **Vitest:** 11 tests passed, 0 failed
+- **Robot Framework:** 2 tests passed, 0 failed
+- **Production Build:** Successful
+- **GitHub Actions:** Successful
+
 ### Limitations
 
 The current system continues to use browser localStorage for patient records. The Active/Inactive status filter is implemented on the existing frontend data flow.
