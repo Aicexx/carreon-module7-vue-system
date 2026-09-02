@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Robot Framework generated reports
+log.html
+output.xml
+playwright-log.txt
+report.html
