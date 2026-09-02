@@ -78,6 +78,7 @@ function initials(name) {
           <!-- ALL -->
           <button
             type="button"
+            data-testid="status-filter-all"
             @click="emit('filter-status', 'All')"
             class="rounded-lg px-3 py-2 text-xs font-black transition"
             :class="
@@ -92,6 +93,7 @@ function initials(name) {
           <!-- ACTIVE -->
           <button
             type="button"
+            data-testid="status-filter-active"
             @click="emit('filter-status', 'Active')"
             class="rounded-lg px-3 py-2 text-xs font-black transition"
             :class="
@@ -106,6 +108,7 @@ function initials(name) {
           <!-- INACTIVE -->
           <button
             type="button"
+            data-testid="status-filter-inactive"
             @click="emit('filter-status', 'Inactive')"
             class="rounded-lg px-3 py-2 text-xs font-black transition"
             :class="
@@ -120,8 +123,9 @@ function initials(name) {
 
         <!-- RECORD COUNT -->
         <span
-          class="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 dark:border-blue-400/10 dark:bg-blue-500/10 dark:text-blue-300"
-        >
+          data-testid="record-count"
+            class="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 dark:border-blue-400/10 dark:bg-blue-500/10 dark:text-blue-300"
+          >
           <span class="h-2 w-2 rounded-full bg-blue-500"></span>
           {{ totalPatients }} Records
         </span>
