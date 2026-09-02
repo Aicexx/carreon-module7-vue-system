@@ -253,6 +253,14 @@ The application implements the required CRUD operations, search, validation, loc
 
 The change improves the usability of the existing patient record list by allowing users to filter records by patient status without removing existing system functions.
 
+### Acceptance Criteria
+
+1. The patient records section provides **All, Active, and Inactive** filter options.
+2. Selecting **Active** displays only patient records marked as Active.
+3. Selecting **Inactive** displays only patient records marked as Inactive.
+4. Selecting **All** displays all patient records.
+5. Existing **Add, Display, Edit, Delete, Search, Validation, Delete Confirmation, and Persistence** functions continue to work correctly.
+
 ### Affected Architecture
 
 The update affects the Vue.js frontend, particularly the patient record presentation and filtering interaction.
